@@ -1,13 +1,14 @@
 from typing import Callable, Dict
 import asyncio
+
+from reports.basereport import BaseReport
 # Below should be imported ALL reports
 from reports.report1 import Report1
 from reports.report2 import Report2
-from reports.report3 import  Report3
+from reports.report3 import Report3
 
 
-async def session(report):
-    await report
+
 
 
 class Mediator:
@@ -16,10 +17,18 @@ class Mediator:
         #   Define a type hint for the callback function (a class method returning a string)
         self.callback_func = Callable[[], str]
         self.selected_reports = {}
-        # self.all_callbacks contains all available reports (as exampled)
-        self.all_callbacks: Dict[int, ()] = {1: Report1.do(), 2: Report2.do(), 3: Report3.do()}
+        self.selected_cascades = {}
+        self.all_callbacks: Dict[int, ()] = {}
+        self.all_reports: Dict[int, BaseReport] = {}
+        self.argument = 'SPARK_SESSION'
+        list_of_classes = [Report1, Report2, Report3]
+        for each in list_of_classes:
+            id_report = each.id
+            obj = each(self.argument)
+            self.all_reports[id_report] = obj
+            self.all_callbacks[id_report] = each.do(self.argument)
 
-    def create_callback_dictionary(self, choice: int) -> None:
+    async def create_callback_dictionary(self, choice: int) -> None:
         """
         Create a list containing the selected class method callback.
         :param choice: An integer  (1 or 2) corresponding to desired report class's do() method.
@@ -30,9 +39,12 @@ class Mediator:
 
         if choice in self.all_callbacks:
             # Collect list
-            self.selected_reports[choice] = self.all_callbacks[choice]
+            self.selected_reports[choice] = self.all_reports[choice]
+            await self.all_reports[choice].cascade(self.argument)
+            return None
         else:
             print(f"Invalid choice {choice}")
+            return None
 
     def clean_all(self):
         self.selected_reports = {}
@@ -60,7 +72,6 @@ class Mediator:
             print("No callback function provided to run.")
             return
         list_of_reports = [*self.selected_reports.values()]
-        tasks = [session(report) for report in list_of_reports]
+        tasks = [report.do(self.argument) for report in list_of_reports]
         await asyncio.gather(*tasks)
         print("--------------------------------------------")
-
