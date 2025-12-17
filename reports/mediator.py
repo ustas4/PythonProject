@@ -1,5 +1,5 @@
-from typing import Callable, Dict
 import asyncio
+from typing import Dict
 
 from reports.basereport import BaseReport
 # Below should be imported ALL reports
@@ -8,17 +8,11 @@ from reports.report2 import Report2
 from reports.report3 import Report3
 
 
-
-
-
 class Mediator:
 
     def __init__(self):
-        #   Define a type hint for the callback function (a class method returning a string)
-        self.callback_func = Callable[[], str]
         self.selected_reports = {}
         self.selected_cascades = {}
-        self.all_callbacks: Dict[int, ()] = {}
         self.all_reports: Dict[int, BaseReport] = {}
         self.argument = 'SPARK_SESSION'
         list_of_classes = [Report1, Report2, Report3]
@@ -26,7 +20,6 @@ class Mediator:
             id_report = each.id
             obj = each(self.argument)
             self.all_reports[id_report] = obj
-            self.all_callbacks[id_report] = each.do(self.argument)
 
     async def create_callback_dictionary(self, choice: int) -> None:
         """
@@ -37,7 +30,7 @@ class Mediator:
         # Map all available class methods
         # Note: Report1.do() is passed as function reference (without parentheses)
 
-        if choice in self.all_callbacks:
+        if choice in self.all_reports:
             # Collect list
             self.selected_reports[choice] = self.all_reports[choice]
             await self.all_reports[choice].cascade(self.argument)
